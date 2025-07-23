@@ -33,8 +33,43 @@ age = st.number_input("Your Age", min_value=10, max_value=100, step=1)
 gender = st.selectbox("Gender", ["Woman", "Man", "Trans-woman", "Trans-man", "Gender fluid", "Agender", "Androgynous", "Bi-gender", "Non-binary", "Demi-man", "Demi-woman", "Genderqueer", "Gender non conforming", "Tri-gender", "All genders", "In the middle of woman and man", "Intersex", "Not sure", "Rather not say", "Other"])
 education = st.selectbox("Highest Level of Education", ["No schooling completed", "Some high-school, No diploma", "High school graduate, diploma or the equivalent", "Some college credit, no credit", "Associate degree", "Bachelor's degree", "Master's degree", "Doctorate degree", "Other"])
 occupation = st.selectbox("Occupation",["Self-employed", "Unemployed", "Employed for wages", "Student", "Homemaker", "Military", "Retired", "Unable to work", "Other"])
-residence = st.selectbox("Country of residence",["North America", "South America", "Europe", "Asia", "Africa", "Antarctica", "Australia", "Oceania"])
-live = st.selectbox("Coutry of birth",["North America", "South America", "Europe", "Asia", "Africa", "Antarctica", "Australia", "Oceania"])
+st.subheader("Location Information")
+continent = st.selectbox("Which continent do you currently reside in?", [
+    "Africa", "Asia", "Europe", "North America", "South America", "Oceania", "Other"
+])
+countries_by_continent = {
+    "Africa": ["Algeria", "Egypt", "Kenya", "Morocco", "Nigeria", "South Africa", "Tunisia", "Other"],
+    "Asia": ["China", "India", "Indonesia", "Japan", "South Korea", "Philippines", "Vietnam", "Other"],
+    "Europe": ["France", "Germany", "Italy", "Spain", "Sweden", "United Kingdom", "Netherlands", "Other"],
+    "North America": ["Canada", "Mexico", "United States", "Other"],
+    "South America": ["Argentina", "Brazil", "Chile", "Colombia", "Peru", "Other"],
+    "Oceania": ["Australia", "Fiji", "New Zealand", "Papua New Guinea", "Other"],
+    "Other": ["Other"]
+}
+country_list = countries_by_continent.get(continent, ["Other"])
+selected_country = st.selectbox("Please specify your country", country_list)
+if selected_country == "Other":
+    selected_country = st.text_input("Type your country here")
+
+continent = st.selectbox("Which continent were you born in?", [
+    "Africa", "Asia", "Europe", "North America", "South America", "Oceania", "Other"
+])
+
+countries_by_continent = {
+    "Africa": ["Algeria", "Egypt", "Kenya", "Morocco", "Nigeria", "South Africa", "Tunisia", "Other"],
+    "Asia": ["China", "India", "Indonesia", "Japan", "South Korea", "Philippines", "Vietnam", "Other"],
+    "Europe": ["France", "Germany", "Italy", "Spain", "Sweden", "United Kingdom", "Netherlands", "Other"],
+    "North America": ["Canada", "Mexico", "United States", "Other"],
+    "South America": ["Argentina", "Brazil", "Chile", "Colombia", "Peru", "Other"],
+    "Oceania": ["Australia", "Fiji", "New Zealand", "Papua New Guinea", "Other"],
+    "Other": ["Other"]
+}
+
+country_list = countries_by_continent.get(continent, ["Other"])
+selected_country = st.selectbox("Please specify your country", country_list)
+
+if selected_country == "Other":
+    selected_country = st.text_input("Type your country here")
 
 st.markdown("---")
 
