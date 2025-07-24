@@ -85,4 +85,6 @@ for i, scenario in enumerate(scenarios):
     elif user_input:
         st.info("✅ You've tested all tones for this scenario. Move on to the next.")
 
-st.success("Thank you for your participation!")
+if st.button("Submit responses"):
+    # Save results
+    st.success("✅ Thank you for your participation!")
