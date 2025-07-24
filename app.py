@@ -28,6 +28,7 @@ def get_simulated_response(user_input, tone):
 # --- Demographics Section ---
 st.header("Demographic Information")
 st.write("Please provide the following information before beginning the scenarios.")
+
 name = st.text_input("Enter your Prolific ID")
 age = st.number_input("Your Age", min_value=10, max_value=100, step=1)
 gender = st.selectbox("Gender", ["Woman", "Man", "Trans-woman", "Trans-man", "Gender fluid", "Agender", "Androgynous", "Bi-gender", "Non-binary", "Demi-man", "Demi-woman", "Genderqueer", "Gender non conforming", "Tri-gender", "All genders", "In the middle of woman and man", "Intersex", "Not sure", "Rather not say", "Other"])
@@ -56,7 +57,6 @@ st.subheader("How comfortable would you be receiving a healthcare diagnosis from
 comfort_level = st.slider("Comfort Level (0 = Not at all comfortable, 5 = Very comfortable)", 0, 5)
 
 st.markdown("---")
-
 st.write("Please engage with each scenario below and provide your thoughts. Once you have engaged with each AI tone, you will receive this message : ✅ You've tested all tones for this scenario. Move on to the next.")
 
 # Scenario definitions
@@ -86,7 +86,20 @@ for i, scenario in enumerate(scenarios):
     elif user_input:
         st.info("✅ You've tested all tones for this scenario. Move on to the next.")
 
-if st.button("Submit responses"):
-    # Save results
-    st.success("✅ Thank you for your participation!")
+# --- Validation Check
+all_answered = (
+    consent_given and
+    name != "" and
+    age and
+    gender != "" and
+    education and
+    occupation and residence and live and ai_familiarity
+    
+)
 
+# --- Button Logic
+if all_answered:
+    if st.button("Submit Survey"):
+        st.success("✅ Thank you for your participation!")
+else:
+    st.error("Please complete all fields before submitting.")
