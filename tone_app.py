@@ -65,8 +65,8 @@ countries_by_continent = {
     "Other": ["Other"]
 }
 
-country_list = countries_by_continent.get(continent, ["Other"])
-selected_country = st.selectbox("Please specify your country", country_list)
+country_list1 = countries_by_continent.get(continent, ["Other"])
+selected_country = st.selectbox("Please specify your country", country_list1)
 
 if selected_country == "Other":
     selected_country = st.text_input("Type your country here")
