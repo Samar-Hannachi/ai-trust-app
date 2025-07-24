@@ -91,7 +91,7 @@ st.subheader("How comfortable would you be receiving a healthcare diagnosis from
 comfort_level = st.slider("Comfort Level (0 = Not at all comfortable, 5 = Very comfortable)", 0, 5)
 
 st.markdown("---")
-st.write("Please engage with each scenario below and provide your thoughts.")
+st.write("Please engage with each scenario below and provide your thoughts. Once you have engaged with each AI tone, you will receive this message : ✅ You've tested all tones for this scenario. Move on to the next.")
 
 # Scenario definitions
 scenarios = [
