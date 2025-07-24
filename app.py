@@ -102,4 +102,5 @@ if all_answered:
     if st.button("Submit Survey"):
         st.success("✅ Thank you for your participation!")
 else:
-    st.error("Please complete all fields before submitting.")
+    if st.button("Submit Survey"):
+        st.error("Please complete all fields before submitting.")
