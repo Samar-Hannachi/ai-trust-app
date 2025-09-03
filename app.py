@@ -1,5 +1,22 @@
 # final_app.py
+import os
+import uuid
+from datetime import datetime
+
+import pandas as pd
 import streamlit as st
+
+# -----------------------------
+# Prolific integration helpers
+# -----------------------------
+def get_prolific_pid() -> str:
+    # Read PROLIFIC_PID from the URL, fallback to typed ID field later
+    params = st.experimental_get_query_params()
+    return params.get("PROLIFIC_PID", [""])[0]
+
+PROLIFIC_COMPLETION_URL = "https://app.prolific.com/submissions/complete?cc=REPLACE_WITH_YOUR_CODE"
+DATA_DIR = "data"
+CSV_PATH = os.path.join(DATA_DIR, "responses.csv")
 
 # -----------------------------
 # Page & Global UI
@@ -10,39 +27,24 @@ st.set_page_config(
     layout="wide",
 )
 
-# Minimal CSS for "cards" + clean typography
+# Minimal CSS for "cards"
 st.markdown(
     """
     <style>
       .app-container {max-width: 1100px; margin: 0 auto;}
-      .card {
-        border: 1px solid rgba(0,0,0,0.08);
-        border-radius: 14px;
-        padding: 18px 20px;
-        background: #ffffff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        margin-bottom: 18px;
-      }
+      .card {border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 18px 20px;
+             background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 18px;}
       .muted {color: rgba(0,0,0,0.6); font-size: 0.95rem;}
-      .pill {
-        display: inline-block; padding: 4px 10px; border-radius: 999px;
-        border: 1px solid rgba(0,0,0,0.1); margin-right: 6px; margin-bottom: 6px;
-        font-size: 0.9rem;
-      }
-      .ok {background: #E8F5E9; border-color: #C8E6C9;}
-      .warn {background: #FFF3E0; border-color: #FFE0B2;}
+      .pill {display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid rgba(0,0,0,0.1);
+             margin-right:6px; margin-bottom:6px; font-size:0.9rem;}
+      .ok {background:#E8F5E9; border-color:#C8E6C9;}
+      .warn {background:#FFF3E0; border-color:#FFE0B2;}
       .sep {height: 8px;}
-      .levels-grid {
-        display: grid; grid-template-columns: 80px 1fr; gap: 10px; align-items: start;
-      }
-      .level-badge {
-        font-weight: 600; background: #F7FAFC; border: 1px solid #EDF2F7; 
-        border-radius: 10px; text-align: center; padding: 6px 8px;
-      }
-      .sticky-submit {
-        position: sticky; bottom: 0; padding: 10px 0; background: linear-gradient(180deg, rgba(255,255,255,0), #ffffff 40%);
-      }
-      /* Make sliders & radios a bit tighter */
+      .levels-grid {display:grid; grid-template-columns: 80px 1fr; gap:10px; align-items:start;}
+      .level-badge {font-weight:600; background:#F7FAFC; border:1px solid #EDF2F7;
+                    border-radius:10px; text-align:center; padding:6px 8px;}
+      .sticky-submit {position: sticky; bottom: 0; padding: 10px 0;
+                      background: linear-gradient(180deg, rgba(255,255,255,0), #ffffff 40%);}
       .stSlider, .stRadio {margin-top: -8px;}
     </style>
     """,
@@ -53,7 +55,6 @@ st.markdown(
 # Helpers
 # -----------------------------
 def card(title: str, subtitle: str | None = None):
-    """Start a card; returns a context manager-like container."""
     c = st.container()
     with c:
         st.markdown(f"<div class='card'>", unsafe_allow_html=True)
@@ -78,6 +79,8 @@ def init_state():
         st.session_state.used_tones = {}  # scenario_index -> list of tones used
     if "scenario_done" not in st.session_state:
         st.session_state.scenario_done = {}  # scenario_index -> bool
+    if "session_id" not in st.session_state:
+        st.session_state.session_id = str(uuid.uuid4())
 
 init_state()
 
@@ -87,7 +90,6 @@ init_state()
 with st.sidebar:
     st.header("🧭 Survey Progress")
     steps = ["Consent", "Demographics", "Comfort", "Scenarios", "Submit"]
-    # Compute progress (rough heuristic)
     consent_ok = st.session_state.get("consent_ok", False)
     demo_ok = st.session_state.get("demo_ok", False)
     comfort_set = st.session_state.get("comfort_set", False)
@@ -142,7 +144,7 @@ c = card("Demographic Information", "Please provide the following information be
 with c:
     col1, col2 = st.columns([1, 1])
     with col1:
-        name = st.text_input("Prolific ID", key="prolific_id")
+        typed_prolific_id = st.text_input("Prolific ID (if not auto-filled from Prolific)")
         age = st.number_input("Age", min_value=10, max_value=100, step=1)
         gender = st.selectbox(
             "Gender",
@@ -179,8 +181,11 @@ with c:
     st.markdown("<div class='sep'></div>", unsafe_allow_html=True)
     ai_familiarity = st.radio("Background/familiarity with AI", ["None", "Basic", "Intermediate", "Expert"], horizontal=True)
 
+    # Prefer PID from URL; fallback to typed field
+    prolific_pid = get_prolific_pid() or typed_prolific_id
+
     demo_ok = (
-        (name or "").strip() != "" and
+        (prolific_pid or "").strip() != "" and
         age is not None and
         gender is not None and
         education is not None and
@@ -240,7 +245,6 @@ with c:
         st.markdown(f"#### Scenario {i+1}")
         st.write(scenario)
 
-        # Input + tone flow
         user_input = st.text_input(f"What would you ask the AI for Scenario {i+1}?", key=f"input_{i}")
         used = st.session_state.used_tones.get(i, [])
         remaining = [t for t in tones_all if t not in used]
@@ -277,17 +281,15 @@ with c:
             used.append(tone_choice)
             st.session_state.used_tones[i] = used
 
-        # Completion badge
         if user_input and len(used) >= 3:
             st.session_state.scenario_done[i] = True
             st.success("✅ You've tested all tones for this scenario. Move on to the next.")
         elif user_input and len(used) > 0:
             st.info(f"Progress: {len(used)}/3 tones tried for this scenario.")
-
 end_card()
 
 # -----------------------------
-# SUBMISSION
+# SUBMISSION (SAVE TO CSV)
 # -----------------------------
 all_answered = (
     st.session_state.consent_ok and
@@ -296,13 +298,57 @@ all_answered = (
     all(st.session_state.scenario_done.get(i, False) for i in range(len(scenarios)))
 )
 
+def build_record():
+    """Collect all answers into a flat dict for CSV storage."""
+    record = {
+        "timestamp_iso": datetime.utcnow().isoformat(),
+        "session_id": st.session_state.session_id,
+        "prolific_pid": prolific_pid,
+        "age": age,
+        "gender": gender,
+        "education": education,
+        "occupation": occupation,
+        "residence": residence,
+        "birth_country": birth_country,
+        "ai_familiarity": ai_familiarity,
+        "comfort_level": st.session_state.get("comfort_level"),
+    }
+
+    # Scenario-specific fields
+    for i in range(len(scenarios)):
+        q = st.session_state.get(f"input_{i}", "")
+        record[f"scenario_{i+1}_question"] = q
+
+        # For each tone, save generated response (simulated) and trust rating if present
+        for tone in tones_all:
+            resp_key = f"response_{tone}_{i}"
+            trust_key = f"trust_{tone}_{i}"
+            record[f"scenario_{i+1}_{tone}_response"] = st.session_state.get(resp_key, "")
+            record[f"scenario_{i+1}_{tone}_trust"] = st.session_state.get(trust_key, "")
+
+        # Save which tones were actually used
+        used = st.session_state.used_tones.get(i, [])
+        record[f"scenario_{i+1}_tones_used"] = "|".join(used)
+
+    return record
+
+def append_to_csv(row_dict: dict, csv_path: str):
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    df_row = pd.DataFrame([row_dict])
+    header = not os.path.exists(csv_path)
+    df_row.to_csv(csv_path, mode="a", header=header, index=False, encoding="utf-8")
+
 with st.container():
     st.markdown("<div class='sticky-submit'>", unsafe_allow_html=True)
     colL, colR = st.columns([5, 2])
     with colL:
         if all_answered:
             if st.button("Submit Survey ✅", use_container_width=True):
+                record = build_record()
+                append_to_csv(record, CSV_PATH)
                 st.success("Thank you for your participation! Your responses have been recorded.")
+                st.info(f"If you are on Prolific, please **complete your submission**: {PROLIFIC_COMPLETION_URL}")
+                st.caption(f"Saved to: {CSV_PATH}")
         else:
             if st.button("Submit Survey", use_container_width=True):
                 st.error("Please complete all required sections before submitting.")
